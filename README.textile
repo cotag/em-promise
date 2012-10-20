@@ -1,0 +1,32 @@
+h1. EM-Promise
+
+A promise/deferred implementation inspired by "AngularJS":http://docs.angularjs.org/api/ng.$q see this documentation for use cases.
+
+From the perspective of dealing with error handling, deferred and promise apis are to asynchronous programing what try, catch and throw keywords are to synchronous programming.
+
+<pre><code class="ruby">
+def asyncGreet(name)
+	deferred = EM::Defer.new
+	
+	EM::Timer.new(5) do
+		EM.defer do
+			deferred.resolve("Hello #{name}")
+		end
+	end
+	
+	deferred.promise
+end
+
+
+EventMachine.run do
+
+	promise = asyncGreet('Robin Hood')
+	promise.then(proc { |greeting|
+		p "Success: #{greeting}"
+	}, proc { |reason|
+		p "Failed: #{reason}"
+	})
+	
+end
+
+</code></pre>
