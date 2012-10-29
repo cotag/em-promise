@@ -75,6 +75,7 @@ module EventMachine
 		
 		class ResolvedPromise < Promise
 			def initialize(response, error = false)
+				raise ArgumentError if error && response.is_a?(Promise)
 				@error = error
 				@response = response
 			end
@@ -111,11 +112,9 @@ module EventMachine
 					@value = ref(val)
 					
 					if callbacks.length > 0
-						EM.next_tick {
-							callbacks.each do |callback|
-								@value.then(callback[0], callback[1])
-							end
-						}
+						callbacks.each do |callback|
+							@value.then(callback[0], callback[1])
+						end
 					end
 				end
 			end
