@@ -24,9 +24,7 @@ module EventMachine
 					begin
 						result.resolve(callback.nil? ? value : callback.call(value))
 					rescue => e
-						#
-						# TODO:: add debugging output here
-						#
+						warn "\nUnhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
 						result.reject(e);
 					end
 				}
@@ -35,9 +33,7 @@ module EventMachine
 					begin
 						result.resolve(errback.nil? ? Defer.reject(reason) : errback.call(reason))
 					rescue => e
-						#
-						# TODO:: add debugging output here
-						#
+						warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
 						result.reject(e);
 					end
 				}
