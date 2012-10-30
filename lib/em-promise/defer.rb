@@ -167,13 +167,54 @@ module EventMachine
 			return ResolvedPromise.new( reason, true )	# A resolved failed promise
 		end
 		
+		#
+		# Combines multiple promises into a single promise that is resolved when all of the input
+		# promises are resolved.
+		#
+		# @param [Promise] a number of promises that will be combined into a single promise
+		# @returns [Promise] Returns a single promise that will be resolved with an array of values,
+		#   each value corresponding to the promise at the same index in the `promises` array. If any of
+		#   the promises is resolved with a rejection, this resulting promise will be resolved with the
+		#   same rejection.
+		def self.all(*promises)
+			deferred = Defer.new
+			counter = promises.length
+			results = []
+			
+			if counter > 0
+				promises.each_index do |index|
+					ref(promises[index]).then(proc {|result|
+						if results[index].nil?
+							results[index] = result
+							counter -= 1
+							deferred.resolve(results) if counter <= 0
+						end
+						result
+					}, proc {|reason|
+						if results[index].nil?
+							deferred.reject(reason)
+						end
+						reason
+					})
+				end
+			else
+				deferred.resolve(results)
+			end
+			
+			return deferred.promise
+		end
+		
 		
 		protected
 		
 		
-		def ref(value)
+		def self.ref(value)
 			return value if value.is_a?(Promise)
 			return ResolvedPromise.new( value )			# A resolved success promise
+		end
+		
+		def ref(value)
+			Defer.ref(value)
 		end
 	end
 

@@ -209,10 +209,274 @@ describe EventMachine::Defer do
 		
 		describe 'then' do
 			
-			it "should not defer rejection with a new promise" do
-				true.should == true	# TODO!! ;)
+			it "should allow registration of a success callback without an errback and resolve" do
+				EventMachine.run {
+					@promise.then(proc {|result|
+						@log << result
+					})
+
+					@deferred.resolve(:foo)
+					
+					EM.next_tick do
+						@log.should == [:foo]
+						EM.stop
+					end
+				}
 			end
 			
+			
+			it "should allow registration of a success callback without an errback and reject" do
+				EventMachine.run {
+					@promise.then(proc {|result|
+						@log << result
+					})
+
+					@deferred.reject(:foo)
+					
+					EM.next_tick do
+						@log.should == []
+						EM.stop
+					end
+				}
+			end
+			
+			
+			it "should allow registration of an errback without a success callback and reject" do
+				EventMachine.run {
+					@promise.then(nil, proc {|reason|
+						@log << reason
+					})
+
+					@deferred.reject(:foo)
+					
+					EM.next_tick do
+						@log.should == [:foo]
+						EM.stop
+					end
+				}
+			end
+			
+			
+			it "should allow registration of an errback without a success callback and resolve" do
+				EventMachine.run {
+					@promise.then(nil, proc {|reason|
+						@log << reason
+					})
+
+					@deferred.resolve(:foo)
+					
+					EM.next_tick do
+						@log.should == []
+						EM.stop
+					end
+				}
+			end
+			
+			
+			it "should resolve all callbacks with the original value" do
+				EventMachine.run {
+					@promise.then(proc {|result|
+						@log << result
+						:alt1
+					}, @default_fail)
+					@promise.then(proc {|result|
+						@log << result
+						'ERROR'
+					}, @default_fail)
+					@promise.then(proc {|result|
+						@log << result
+						EM::Defer.reject('some reason')
+					}, @default_fail)
+					@promise.then(proc {|result|
+						@log << result
+						:alt2
+					}, @default_fail)
+					
+					@deferred.resolve(:foo)
+					
+					EM.next_tick do
+						@log.should == [:foo, :foo, :foo, :foo]
+						EM.stop
+					end
+				}
+			end
+			
+			
+			it "should reject all callbacks with the original reason" do
+				EventMachine.run {
+					@promise.then(@default_fail, proc {|result|
+						@log << result
+						:alt1
+					})
+					@promise.then(@default_fail, proc {|result|
+						@log << result
+						'ERROR'
+					})
+					@promise.then(@default_fail, proc {|result|
+						@log << result
+						EM::Defer.reject('some reason')
+					})
+					@promise.then(@default_fail, proc {|result|
+						@log << result
+						:alt2
+					})
+					
+					@deferred.reject(:foo)
+					
+					EM.next_tick do
+						@log.should == [:foo, :foo, :foo, :foo]
+						EM.stop
+					end
+				}
+			end
+			
+			
+			it "should propagate resolution and rejection between dependent promises" do
+				EventMachine.run {
+					@promise.then(proc {|result|
+						@log << result
+						:bar
+					}, @default_fail).then(proc {|result|
+						@log << result
+						raise 'baz'
+					}, @default_fail).then(@default_fail, proc {|result|
+						@log << result.message
+						raise 'bob'
+					}).then(@default_fail, proc {|result|
+						@log << result.message
+						:done
+					}).then(proc {|result|
+						@log << result
+					}, @default_fail)
+					
+					@deferred.resolve(:foo)
+					
+					EM.next_tick do
+						EM.next_tick do
+							EM.next_tick do
+								EM.next_tick do
+									EM.next_tick do
+										@log.should == [:foo, :bar, 'baz', 'bob', :done]
+										EM.stop
+									end
+								end
+							end
+						end
+					end
+				}
+			end
+			
+			
+			it "should call error callback in the next turn even if promise is already rejected" do
+				EventMachine.run {
+					@deferred.reject(:foo)
+					
+					@promise.then(nil, proc {|reason|
+						@log << reason
+					})
+					
+					EM.next_tick do
+						@log.should == [:foo]
+						EM.stop
+					end
+				}
+			end
+			
+			
+		end
+		
+	end
+	
+	
+	
+	describe 'reject' do
+		
+		it "should package a string into a rejected promise" do
+			EventMachine.run {
+				rejectedPromise = EM::Defer.reject('not gonna happen')
+				
+				@promise.then(nil, proc {|reason|
+					@log << reason
+				})
+				
+				@deferred.resolve(rejectedPromise)
+				
+				EM.next_tick do
+					@log.should == ['not gonna happen']
+					EM.stop
+				end
+			}
+		end
+		
+		
+		it "should return a promise that forwards callbacks if the callbacks are missing" do
+			EventMachine.run {
+				rejectedPromise = EM::Defer.reject('not gonna happen')
+				
+				@promise.then(nil, proc {|reason|
+					@log << reason
+				})
+				
+				@deferred.resolve(rejectedPromise.then())
+				
+				EM.next_tick do
+					EM.next_tick do
+						@log.should == ['not gonna happen']
+						EM.stop
+					end
+				end
+			}
+		end
+		
+	end
+	
+	
+	
+	describe 'all' do
+		
+		it "should resolve all of nothing" do
+			EventMachine.run {
+				EM::Defer.all().then(proc {|result|
+					@log << result
+				}, @default_fail)
+				
+				EM.next_tick do
+					@log.should == [[]]
+					EM.stop
+				end
+			}
+		end
+		
+		it "should take an array of promises and return a promise for an array of results" do
+			EventMachine.run {
+				deferred1 = EM::Defer.new
+				deferred2 = EM::Defer.new
+				
+				EM::Defer.all(@promise, deferred1.promise, deferred2.promise).then(proc {|result|
+					result.should == [:foo, :bar, :baz]
+					EM.stop
+				}, @default_fail)
+				
+				EM.defer { @deferred.resolve(:foo) }
+				EM.defer { deferred2.resolve(:baz) }
+				EM.defer { deferred1.resolve(:bar) }
+			}
+		end
+		
+		
+		it "should reject the derived promise if at least one of the promises in the array is rejected" do
+			EventMachine.run {
+				deferred1 = EM::Defer.new
+				deferred2 = EM::Defer.new
+				
+				EM::Defer.all(@promise, deferred1.promise, deferred2.promise).then(@default_fail, proc {|reason|
+					reason.should == :baz
+					EM.stop
+				})
+				
+				EM.defer { @deferred.resolve(:foo) }
+				EM.defer { deferred2.reject(:baz) }
+			}
 		end
 		
 	end
