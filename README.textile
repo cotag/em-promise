@@ -1,5 +1,7 @@
 h1. EM-Promise
 
+!https://secure.travis-ci.org/cotag/em-promise.png!
+
 A promise/deferred implementation inspired by "AngularJS":http://docs.angularjs.org/api/ng.$q see this documentation for use cases.
 
 From the perspective of dealing with error handling, deferred and promise apis are to asynchronous programing what try, catch and throw keywords are to synchronous programming.
