@@ -4,10 +4,10 @@ require 'bundler/setup'
 require 'em-promise'
 
 
-describe EventMachine::Defer do
+describe EventMachine::Q do
 	
 	before :each do
-		@deferred = EM::Defer.new
+		@deferred = EM::Q.defer
 		@promise = @deferred.promise
 		@log = []
 		@default_fail = proc { |reason|
@@ -86,7 +86,7 @@ describe EventMachine::Defer do
 		
 		
 		it "should allow deferred resolution with a new promise" do
-			deferred2 = EM::Defer.new
+			deferred2 = EM::Q.defer
 			EventMachine.run {
 				@promise.then(proc {|result|
 					result.should == :foo
@@ -190,7 +190,7 @@ describe EventMachine::Defer do
 		
 		
 		it "should not defer rejection with a new promise" do
-			deferred2 = EM::Defer.new
+			deferred2 = EM::Q.defer
 			EventMachine.run {
 				@promise.then(@default_fail, @default_fail)
 				begin
@@ -205,7 +205,7 @@ describe EventMachine::Defer do
 	end
 	
 	
-	describe EventMachine::Defer::Promise do
+	describe EventMachine::Q::Promise do
 		
 		describe 'then' do
 			
@@ -314,7 +314,7 @@ describe EventMachine::Defer do
 					})
 					@promise.then(@default_fail, proc {|result|
 						@log << result
-						EM::Defer.reject('some reason')
+						EM::Q.reject('some reason')
 					})
 					@promise.then(@default_fail, proc {|result|
 						@log << result
@@ -393,7 +393,7 @@ describe EventMachine::Defer do
 		
 		it "should package a string into a rejected promise" do
 			EventMachine.run {
-				rejectedPromise = EM::Defer.reject('not gonna happen')
+				rejectedPromise = EM::Q.reject('not gonna happen')
 				
 				@promise.then(nil, proc {|reason|
 					@log << reason
@@ -411,7 +411,7 @@ describe EventMachine::Defer do
 		
 		it "should return a promise that forwards callbacks if the callbacks are missing" do
 			EventMachine.run {
-				rejectedPromise = EM::Defer.reject('not gonna happen')
+				rejectedPromise = EM::Q.reject('not gonna happen')
 				
 				@promise.then(nil, proc {|reason|
 					@log << reason
@@ -436,7 +436,7 @@ describe EventMachine::Defer do
 		
 		it "should resolve all of nothing" do
 			EventMachine.run {
-				EM::Defer.all().then(proc {|result|
+				EM::Q.all.then(proc {|result|
 					@log << result
 				}, @default_fail)
 				
@@ -449,10 +449,10 @@ describe EventMachine::Defer do
 		
 		it "should take an array of promises and return a promise for an array of results" do
 			EventMachine.run {
-				deferred1 = EM::Defer.new
-				deferred2 = EM::Defer.new
+				deferred1 = EM::Q.defer
+				deferred2 = EM::Q.defer
 				
-				EM::Defer.all(@promise, deferred1.promise, deferred2.promise).then(proc {|result|
+				EM::Q.all(@promise, deferred1.promise, deferred2.promise).then(proc {|result|
 					result.should == [:foo, :bar, :baz]
 					EM.stop
 				}, @default_fail)
@@ -466,10 +466,10 @@ describe EventMachine::Defer do
 		
 		it "should reject the derived promise if at least one of the promises in the array is rejected" do
 			EventMachine.run {
-				deferred1 = EM::Defer.new
-				deferred2 = EM::Defer.new
+				deferred1 = EM::Q.defer
+				deferred2 = EM::Q.defer
 				
-				EM::Defer.all(@promise, deferred1.promise, deferred2.promise).then(@default_fail, proc {|reason|
+				EM::Q.all(@promise, deferred1.promise, deferred2.promise).then(@default_fail, proc {|reason|
 					reason.should == :baz
 					EM.stop
 				})

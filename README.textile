@@ -8,11 +8,10 @@ From the perspective of dealing with error handling, deferred and promise apis a
 
 <pre><code class="ruby">
 require 'rubygems'
-require 'eventmachine'
 require 'em-promise'
 
 def asyncGreet(name)
-	deferred = EM::Defer.new
+	deferred = EM::Q.defer
 	
 	EM::Timer.new(5) do
 		EM.defer do
@@ -26,12 +25,15 @@ end
 
 EventMachine.run do
 
-	promise = asyncGreet('Robin Hood')
-	promise.then(proc { |greeting|
+	asyncGreet('Robin Hood').then(proc { |greeting|
 		p "Success: #{greeting}"
 	}, proc { |reason|
 		p "Failed: #{reason}"
 	})
+	
+	asyncGreet('The Dude').then do |greeting|
+		p "Jeff '#{greeting}' Lebowski"
+	end
 	
 end
 
@@ -40,4 +42,5 @@ end
 
 h2. Start using it now
 
-@gem install em-promise@
+# Read the "Documentation":http://rubydoc.info/gems/em-promise/
+# Then @gem install em-promise@

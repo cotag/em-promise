@@ -1,3 +1,3 @@
 require 'eventmachine'
 
-require 'em-promise/defer.rb'
+require 'em-promise/q.rb'
