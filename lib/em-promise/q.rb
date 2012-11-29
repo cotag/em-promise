@@ -3,10 +3,7 @@
 module EventMachine
 	
 	
-	class Q
-		private_class_method :new
-		
-		
+	module Q
 		# @abstract
 		class Promise
 			private_class_method :new
@@ -117,12 +114,68 @@ module EventMachine
 		end
 		
 		
+		#
+		# The purpose of the deferred object is to expose the associated Promise instance as well
+		# as APIs that can be used for signalling the successful or unsuccessful completion of a task.
+		#
+		class Deferred
+			include Q
+			
+			def initialize
+				super()
+				
+				@pending = []
+				@value = nil
+			end
+			
+			#
+			# resolves the derived promise with the value. If the value is a rejection constructed via
+			# Q.reject, the promise will be rejected instead.
+			#
+			# @param [Object] val constant, message or an object representing the result.
+			def resolve(val = nil)
+				EM.schedule do
+					if not @pending.nil?
+						callbacks = @pending
+						@pending = nil
+						@value = ref(val)
+						
+						if callbacks.length > 0
+							callbacks.each do |callback|
+								@value.then(callback[0], callback[1])
+							end
+						end
+					end
+				end
+			end
+			
+			#
+			# rejects the derived promise with the reason. This is equivalent to resolving it with a rejection
+			# constructed via Q.reject.
+			#
+			# @param [Object] reason constant, message, exception or an object representing the rejection reason.
+			def reject(reason = nil)
+				resolve(Q.reject(reason))
+			end
+			
+			#
+			# Creates a promise object associated with this deferred
+			#
+			def promise
+				DeferredPromise.new( self )
+			end
+		end
+		
+		
+		
+		
+		
 		
 		#
 		# Creates a Deferred object which represents a task which will finish in the future.
 		#
 		# @return [Deferred] Returns a new instance of Deferred
-		def self.defer
+		def defer
 			return Deferred.new
 		end
 		
@@ -160,7 +213,7 @@ module EventMachine
 		#
 		# @param [Object] reason constant, message, exception or an object representing the rejection reason.
 		# @return [Promise] Returns a promise that was already resolved as rejected with the reason
-		def self.reject(reason = nil)
+		def reject(reason = nil)
 			return ResolvedPromise.new( reason, true )	# A resolved failed promise
 		end
 		
@@ -173,7 +226,7 @@ module EventMachine
 		#   each value corresponding to the promise at the same index in the `promises` array. If any of
 		#   the promises is resolved with a rejection, this resulting promise will be resolved with the
 		#   same rejection.
-		def self.all(*promises)
+		def all(*promises)
 			deferred = Q.defer
 			counter = promises.length
 			results = []
@@ -199,71 +252,6 @@ module EventMachine
 			end
 			
 			return deferred.promise
-		end		
-		
-		
-		private
-		
-		
-		def self.ref(value)
-			return value if value.is_a?(Promise)
-			return ResolvedPromise.new( value )			# A resolved success promise
-		end
-	end
-	
-	
-	#
-	# The purpose of the deferred object is to expose the associated Promise instance as well
-	# as APIs that can be used for signalling the successful or unsuccessful completion of a task.
-	#
-	class Q::Deferred < Q
-		public_class_method :new
-		private_class_method :defer
-		private_class_method :reject
-		private_class_method :all
-		
-		def initialize
-			super()
-			
-			@pending = []
-			@value = nil
-		end
-		
-		#
-		# resolves the derived promise with the value. If the value is a rejection constructed via
-		# Q.reject, the promise will be rejected instead.
-		#
-		# @param [Object] val constant, message or an object representing the result.
-		def resolve(val = nil)
-			EM.schedule do
-				if not @pending.nil?
-					callbacks = @pending
-					@pending = nil
-					@value = ref(val)
-					
-					if callbacks.length > 0
-						callbacks.each do |callback|
-							@value.then(callback[0], callback[1])
-						end
-					end
-				end
-			end
-		end
-		
-		#
-		# rejects the derived promise with the reason. This is equivalent to resolving it with a rejection
-		# constructed via Q.reject.
-		#
-		# @param [Object] reason constant, message, exception or an object representing the rejection reason.
-		def reject(reason = nil)
-			resolve(Q.reject(reason))
-		end
-		
-		#
-		# Creates a promise object associated with this deferred
-		#
-		def promise
-			DeferredPromise.new( self )
 		end
 		
 		
@@ -271,8 +259,13 @@ module EventMachine
 		
 		
 		def ref(value)
-			Deferred.ref(value)		# Defined in Q (DRY)
+			return value if value.is_a?(Promise)
+			return ResolvedPromise.new( value )			# A resolved success promise
 		end
+		
+		
+		module_function :all, :reject, :defer, :ref
+		private_class_method :ref
 	end
 
 end

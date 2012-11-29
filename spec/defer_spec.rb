@@ -285,7 +285,7 @@ describe EventMachine::Q do
 					}, @default_fail)
 					@promise.then(proc {|result|
 						@log << result
-						EM::Defer.reject('some reason')
+						EM::Q.reject('some reason')
 					}, @default_fail)
 					@promise.then(proc {|result|
 						@log << result
