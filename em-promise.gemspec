@@ -4,7 +4,7 @@ require "em-promise/version"
 
 Gem::Specification.new do |s|
   s.name        = "em-promise"
-  s.version     = EventMachine::Defer::VERSION
+  s.version     = EventMachine::Q::VERSION
 
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Stephen von Takach"]

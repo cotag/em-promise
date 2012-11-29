@@ -21,7 +21,7 @@ describe EventMachine::Q do
 		
 		
 		it "should call the callback in the next turn" do
-			deferred2 = EM::Defer.new
+			deferred2 = EM::Q.defer
 			EventMachine.run {
 				@promise.then(proc {|result|
 					@log << result

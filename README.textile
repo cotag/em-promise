@@ -42,5 +42,5 @@ end
 
 h2. Start using it now
 
-# Read the "Documentation":http://rubydoc.info/gems/em-promise/
+# Read the "Documentation":http://rubydoc.info/gems/em-promise/EventMachine/Q
 # Then @gem install em-promise@

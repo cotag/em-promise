@@ -1,5 +1,5 @@
 module EventMachine
-	class Defer
-		VERSION = "1.1.0"
+	class Q
+		VERSION = "1.1.1"
 	end
 end

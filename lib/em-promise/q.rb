@@ -30,6 +30,7 @@ module EventMachine
 			# The callbacks are called with a single argument, the result or rejection reason.
 			#
 			# @param [Proc, Proc, &blk] callbacks success, error, success_block
+			# @return [Promise] Returns an unresolved promise for chaining
 			def then(callback = nil, errback = nil, &blk)
 				result = Q.defer
 				
@@ -221,7 +222,7 @@ module EventMachine
 		# Combines multiple promises into a single promise that is resolved when all of the input
 		# promises are resolved.
 		#
-		# @param [Promise] a number of promises that will be combined into a single promise
+		# @param [*Promise] Promises a number of promises that will be combined into a single promise
 		# @return [Promise] Returns a single promise that will be resolved with an array of values,
 		#   each value corresponding to the promise at the same index in the `promises` array. If any of
 		#   the promises is resolved with a rejection, this resulting promise will be resolved with the
