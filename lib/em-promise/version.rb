@@ -1,5 +1,5 @@
 module EventMachine
-	class Q
+	module Q
 		VERSION = "1.1.1"
 	end
 end
