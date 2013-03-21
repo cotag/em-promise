@@ -1,6 +1,6 @@
 h1. EM-Promise
 
-!https://secure.travis-ci.org/cotag/em-promise.png(Build Status)!:http://secure.travis-ci.org/cotag/em-promise
+!https://secure.travis-ci.org/cotag/em-promise.png(Build Status)!:https://travis-ci.org/cotag/em-promise
 
 A promise / deferred implementation for EventMachine inspired by "AngularJS":http://docs.angularjs.org/api/ng.$q / "Kris Kowal's Q.":https://github.com/kriskowal/q
 
